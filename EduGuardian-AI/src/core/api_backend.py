@@ -1,10 +1,13 @@
 # EduGuardian-AI/src/core/api_backend.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
-# Use a relative import so it looks in the same 'core' directory
+# Internal project imports using correct relative paths
 from .database import init_db, insert_student, fetch_all_students, log_student_attendance, get_class_attendance_analytics
+from ..ai.risk_engine import evaluate_student_risk_profiles, generate_campus_ai_summary
+from .notification_engine import generate_guardian_alert
+from .portal_sync import simulate_moodle_portal_sync
 
 app = FastAPI(title="EduGuardian AI Core API", version="1.0.0")
 
@@ -50,3 +53,25 @@ def record_attendance(log: AttendanceModel):
 @app.get("/analytics/attendance")
 def attendance_analytics():
     return get_class_attendance_analytics()
+
+@app.get("/ai/risk-report")
+def get_risk_report():
+    """Returns AI-calculated risk profiles for all students."""
+    return evaluate_student_risk_profiles()
+
+@app.get("/ai/diagnostics")
+def get_ai_diagnostics():
+    """Returns high-level AI campus health alerts."""
+    return {"alerts": generate_campus_ai_summary()}
+
+@app.post("/notifications/alert")
+def trigger_alert(admission_no: str, student_name: str, form_class: str, attendance_rate: float):
+    """Triggers and returns an automated guardian/admin notification draft."""
+    alert_text = generate_guardian_alert(student_name, admission_no, form_class, attendance_rate)
+    return {"status": "Alert Generated", "notification_content": alert_text}
+
+@app.post("/portal/sync")
+def sync_portal_data():
+    """Triggers synchronization from external student portals or Moodle."""
+    sync_results = simulate_moodle_portal_sync()
+    return {"status": "Sync Complete", "details": sync_results}

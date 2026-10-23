@@ -10,8 +10,8 @@ st.set_page_config(page_title="EduGuardian AI - Command Center", layout="wide")
 st.title("🛡️ EduGuardian AI — Intelligent School Operations Platform")
 st.markdown("### Real-time Campus Intelligence & Administration Control Center")
 
-# Sidebar navigation
-menu = st.sidebar.selectbox("Navigation", ["Admin Overview & AI", "Student Management", "Attendance Logging"])
+# Sidebar navigation including the new Portal & Notifications module
+menu = st.sidebar.selectbox("Navigation", ["Admin Overview & AI", "Student Management", "Attendance Logging", "Portal & Notifications"])
 
 if menu == "Admin Overview & AI":
     st.subheader("🤖 EduGuardian AI Decision Engine & Risk Analytics")
@@ -148,3 +148,51 @@ elif menu == "Attendance Logging":
                         st.error("Failed to log attendance.")
                 except Exception as e:
                     st.error(f"Connection error: {e}")
+
+elif menu == "Portal & Notifications":
+    st.subheader("🌐 Moodle / Student Portal Integration & Automated Alerts")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### External Portal & LMS Sync")
+        st.info("Simulate pulling live sign-ins and engagement logs from external student portals or Moodle.")
+        if st.button("Sync Data from Student Portal / Moodle"):
+            try:
+                res = requests.post(f"{API_BASE_URL}/portal/sync")
+                if res.status_code == 200:
+                    data = res.json()
+                    st.success("Portal sync executed successfully!")
+                    for detail in data.get("details", []):
+                        st.write(f"- {detail}")
+                else:
+                    st.error("Portal sync failed.")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
+                
+    with col2:
+        st.markdown("#### Automated Guardian Communication")
+        st.info("Generate official intervention messages for students flagged as high risk.")
+        
+        adm_input = st.text_input("Enter Student Admission No for Notice (e.g. ADM/2026/001)")
+        name_input = st.text_input("Student Full Name")
+        class_input = st.text_input("Form / Class")
+        rate_input = st.number_input("Attendance Rate (%)", value=60.0)
+        
+        if st.button("Generate Guardian Notice"):
+            try:
+                params = {
+                    "admission_no": adm_input,
+                    "student_name": name_input,
+                    "form_class": class_input,
+                    "attendance_rate": rate_input
+                }
+                res = requests.post(f"{API_BASE_URL}/notifications/alert", params=params)
+                if res.status_code == 200:
+                    notice = res.json().get("notification_content")
+                    st.success("Official notice drafted successfully!")
+                    st.code(notice)
+                else:
+                    st.error("Failed to generate notice.")
+            except Exception as e:
+                st.error(f"Connection error: {e}")
